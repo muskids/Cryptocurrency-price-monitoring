@@ -1,0 +1,48 @@
+import os
+import requests
+import json
+from datetime import datetime
+
+# Telegram message sending function
+def send_telegram_message(message, chat_id, bot_token):
+    url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
+    data = {
+        'chat_id': chat_id,
+        'text': message,
+        'parse_mode': 'Markdown'
+    }
+    response = requests.post(url, data=data)
+    return response.json()
+
+# Binance API Key and Secret Key
+api_key = os.environ['BINANCE_API_KEY']
+api_secret = os.environ['BINANCE_SECRET_KEY']
+
+# Telegram Bot Token and Chat ID
+bot_token = os.environ['TELEGRAM_BOT_TOKEN']
+chat_id = os.environ['TELEGRAM_CHAT_ID']
+
+# Binance API client
+client = BinanceClient(api_key, api_secret)
+
+def main():
+    # Get all price tickers
+    all_prices = client.get_all_tickers()
+
+    for price in all_prices:
+        # Check for price drop condition
+        if price['priceChangePercent'] < -5:
+            symbol = price['symbol']
+            current_price = price['price']
+            change_percent = price['priceChangePercent']
+
+            # Build the notification message
+            message = f'*{symbol}* price has dropped significantly!\n' \
+                      f'Current price: {current_price}\n' \
+                      f'Drop percentage: {change_percent}%'
+
+            # Send notification via Telegram
+            send_telegram_message(message, chat_id, bot_token)
+
+if __name__ == '__main__':
+    main()
